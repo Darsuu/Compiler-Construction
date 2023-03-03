@@ -1,0 +1,11 @@
+✅ Complete the Grammar rules
+✅ PrintT and PrintNT complete
+✅ Encode first
+✅Check follow 
+✅Encode follow
+✅ Parse table
+✅ N-ary tree
+✅ Stack
+stack + parse table = parse tree
+fix lexer.c
+parsing error correction
