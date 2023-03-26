@@ -1,0 +1,22 @@
+**
+Group No. : 42
+ID: 2020A7PS1214P	Name: Darshan Abhaykumar
+ID: 2020A7PS0970P	Name: Debjit Kar
+ID:2020A7PS0986P	Name: Nidhish Parekh
+**
+<<<driver Program>>>
+start
+declare a,b:integer;
+declare c: boolean;
+a:=48;
+b:=10;
+c:=(a>=25)AND(b<60);
+switch(c)
+    start
+    case false :print(0);
+    break;
+    case true: print(1); 
+    use module mod1 with parameters 100, 5;
+    break;
+    end
+end

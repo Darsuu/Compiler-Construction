@@ -1,8 +1,14 @@
+/*
+Group No.: 42
+ID: 2020A7PS1214P	Name: Darshan Abhaykumar
+ID: 2020A7PS0970P	Name: Debjit Kar
+ID:2020A7PS0986P	Name: Nidhish Parekh
+*/
+
 /* Definitions of data structures for lexer*/
 #ifndef LEXERDEF_H
 #define LEXERDEF_H
-#define BUFFER_SIZE (1<<25)
-#define MAX_LEXEME 100
+#define MAX_LEXEME (1<<15)
 #define TOKEN_COUNT 60
 typedef enum { 
     INTEGER,
@@ -77,8 +83,8 @@ typedef struct {
 } tokenInfo;
 
 typedef struct{
-    char one[BUFFER_SIZE + 1]; 
-    char two[BUFFER_SIZE + 1]; 
+    char* one;
+    char* two;
 } buffer;
 
 typedef struct {

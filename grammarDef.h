@@ -1,3 +1,9 @@
+/*
+Group No. : 42
+ID: 2020A7PS1214P	Name: Darshan Abhaykumar
+ID: 2020A7PS0970P	Name: Debjit Kar
+ID:2020A7PS0986P	Name: Nidhish Parekh
+*/
 #ifndef GRAMMARDEF_H
 #define GRAMMARDEF_H
 #include "lexerDef.h"
@@ -76,6 +82,10 @@ typedef enum {
 	whichStmt,
 	assignmentStmt,
 	simpleStmt,
+	actual_para_list,
+	actual_para_list2,
+	Term9,
+	K
 } NT;
 
 #endif

@@ -1,9 +1,7 @@
 #ifndef LINKEDLIST_H
 #define LINKEDLIST_H
-
 #include "lexerDef.h"
 #include "grammarDef.h"
-#include <stdbool.h>
 
 struct node
 {
@@ -38,8 +36,6 @@ NODE createNewTerm(token t_val, NT nt_val, int n);
 
 void insertNodeIntoRule(NODE node, RULE rule);
 // This function inserts a node at the beginning of the list.
-
-
 
 void removeFirstNode(RULE rule);
 // This function removes the first node from the list.

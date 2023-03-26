@@ -104,28 +104,31 @@ void printParseTree(TREENODE t1, char* outfile)
 }
 
 // HELPER FUNCTION
-void printTree(TREENODE node, int level)
+void printTree(TREENODE node, int level, FILE* fp)
 {
     while (node != NULL)
     {
-        for (int i = 0; i < level; i++) printf("\t");
-        printf("Level %d Node -> ", level);
-        if(node->tnt == 0) printT(node->val.t_val);
-        else printNT(node->val.nt_val);
-        printf("\n");
+        for (int i = 0; i < level; i++)
+        {
+            fprintf(fp, "\t");
+        } 
+        fprintf(fp, "Level %d Node -> ", level);
+        if(node->tnt == 0) fprintT(fp, node->val.t_val);
+        else fprintNT(fp, node->val.nt_val);
+        fprintf(fp, "\n");
 
         if (node->firstChild != NULL)
         {
-            for (int i = 0; i < level; i++) printf("\t");
-            printf("Children: \n");
-            printTree(node->firstChild, level + 1);
+            for (int i = 0; i < level; i++) fprintf(fp, "\t");
+            fprintf(fp, "Children: \n");
+            printTree(node->firstChild, level + 1, fp);
         }
         node = node->nextSibling;
     }
 }
 
 
-void runTree(void)
+void runTree(char* outputfile)
 {
     TREENODE t1 = initTree();
     RULE temp = createNewRule(program, 0);
@@ -136,13 +139,9 @@ void runTree(void)
     addTermToRule(temp2, 0, 0, 1);
     addTermToRule(temp2, 0, 0, 0);
     addTermToRule(temp2, 0, 0, 0);
-    // RULE temp3 = createNewRule(moduleDeclaration, 2);
-    // addTermToRule(temp3, 0, 0, 0);
-    // addTermToRule(temp3, 0, 0, 0);
-    // addTermToRule(temp3, 0, 0, 0);
     leftmostDerive(temp->head->next, t1);
     leftmostDerive(temp2->head->next, t1);
-    //leftmostDerive(temp3->head->next, t1);
-    // printTree(t1, 0);
-    // inOrderTraversal(t1);
+    FILE* fp1 = fopen(outputfile, "w");
+    printTree(t1,0, fp1);
+    fclose(fp1);
 }

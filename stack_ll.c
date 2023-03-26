@@ -1,43 +1,40 @@
-//your stack is not making sense to me
-//stack should be a linkedlist of nodes, and unlike rule, iska addition and deletion is at the head and not the tail, so can't use the same linkedlist struct
 #include "stack.h"
-#include "linkedlist.h"
+#include "Nlinkedlist.h"
 #include "grammar.h"
+#include "lexer.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 Stack* newStack()
 {
-    RULE ll = createNewRule(0, -1);
     Stack* mainStack = (Stack*) malloc(sizeof(Stack));
-    mainStack->ll = ll;
-    mainStack->end = createNewTerm(ENDOFFILE,0,0);
+    mainStack->list1 = createNewList();
     return mainStack;
 }
 
 void push(Stack* mainStack, NODE element)
 {
-    RULE ll = mainStack->ll;
-    insertNodeIntoRule(element, ll);
+    // printNT(element->val.nt_val);
+    LIST temp = mainStack->list1;
+    insertNodeIntoList(element, temp);
 }
 
 NODE top(Stack* mainStack) 
 {
-    RULE ll = mainStack->ll;
+    LIST ll = mainStack->list1;
     NODE temp = ll->head;
-    if(temp==NULL) return mainStack->end;
     return temp;
 }
 
 void pop(Stack* mainStack)
 {
-    RULE ll = mainStack->ll;
-    removeFirstNode(ll);
+    LIST ll = mainStack->list1;
+    removeFirst(ll);
 }
 
 int reachEnd(Stack* mainStack)
 {
-    if(mainStack->ll->head->next != NULL) return 0;
+    if(mainStack->list1->head != NULL) return 0;
     else return 1;
 }
 
@@ -57,12 +54,14 @@ void pushDerivation(Stack* mainStack, NODE rules)
     }
 }
 
+
+// HELPER FUNCTIONx
 void printStack(Stack* mainStack)
 {
     while(!reachEnd(mainStack))
     {
         NODE temp = top(mainStack);
-        pop(mainStack);
+        
         if(temp->tnt == 1)
         {
             printNT(temp->val.nt_val);
@@ -72,7 +71,7 @@ void printStack(Stack* mainStack)
         {
             printT(temp->val.t_val);
             printf("\n");
-        } 
+        }
+        pop(mainStack);
     }
-    // printT(mainStack->end->val.t_val);
 }

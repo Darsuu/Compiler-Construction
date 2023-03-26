@@ -1,14 +1,12 @@
 /*
-ID: 2020A7PS1214P	Name: Darshan Abhaykumar
-ID: 2020A7PS0970P	Name: Debjit Kar
-ID:2020A7PS0986P	Name: Nidhish Parekh
+ID: 2020A7PS1214P   Name: Darshan Abhaykumar
+ID: 2020A7PS0970P   Name: Debjit Kar
+ID:2020A7PS0986P    Name: Nidhish Parekh
 */
 
-#include "grammarDef.h"
 #include "grammar.h"
-#include "parserDef.h"
+#include "parser.h"
 #include "stack.h"
-#include "lexerDef.h"
 #include "lexer.h"
 #include "linkedlist.h"
 #include "tree.h"
@@ -21,77 +19,72 @@ NODE* firsts;
 NODE* follows; 
 
 void createParseTable(){
-	parseTable = (int**) malloc(NT_COUNT*sizeof(int*));
+    parseTable = (int**) malloc(NT_COUNT*sizeof(int*));
 
-	for(int i = 0; i < NT_COUNT; i++){
-		parseTable[i] = (int*) malloc(TOKEN_COUNT*sizeof(int));
-	}
+    for(int i = 0; i < NT_COUNT; i++){
+        parseTable[i] = (int*) malloc(TOKEN_COUNT*sizeof(int));
+    }
 
-	for(int i = 0; i < NT_COUNT; i++){
-		for(int j = 0; j < TOKEN_COUNT; j++){
-			parseTable[i][j] = -1;
-		}
-	}
-	
-	NT nt;
-	NODE rhs;//left most term of rhs of rule
-	NODE currNode;//traverses first of rhs or follow of lhs
-	int ep = 1;
+    for(int i = 0; i < NT_COUNT; i++){
+        for(int j = 0; j < TOKEN_COUNT; j++){
+            parseTable[i][j] = -1;
+        }
+    }
+    
+    NT nt;
+    NODE rhs;//left most term of rhs of rule
+    NODE currNode;//traverses first of rhs or follow of lhs
+    int ep = 1;
 
-	for(int i = 0; i < NT_COUNT; i++){
-		for(int j = 0; j < TOKEN_COUNT; j++){
-			if(table[i][j] == NULL) break;
+    for(int i = 0; i < NT_COUNT; i++){
+        for(int j = 0; j < TOKEN_COUNT; j++){
+            if(table[i][j] == NULL) break;
 
-			rhs = table[i][j]->head->next;
-			while(ep && rhs!=NULL){	
-				ep = 0;//epsilon flag
-				
-				if(rhs->tnt){									//if term is nt
-					nt = rhs->val.nt_val;
-					currNode = firsts[nt];
-					
-					do{
-						if(currNode->val.t_val == EPSILON) ep = 1;		//set epsilon flag
-						parseTable[i][currNode->val.t_val] = j;
-						currNode = currNode->next;
-						
-					}
-					while(currNode!=NULL);								//end of first(nt)
-				}
-				else{	
-					if(rhs->val.t_val == EPSILON) ep = 1;
-					parseTable[i][rhs->val.t_val] = j;
-				}
-				rhs = rhs->next;
-			}
+            rhs = table[i][j]->head->next;
+            while(ep && rhs!=NULL){ 
+                ep = 0;//epsilon flag
+                
+                if(rhs->tnt){                                   //if term is nt
+                    nt = rhs->val.nt_val;
+                    currNode = firsts[nt];
+                    
+                    do{
+                        if(currNode->val.t_val == EPSILON) ep = 1;      //set epsilon flag
+                        parseTable[i][currNode->val.t_val] = j;
+                        currNode = currNode->next;
+                        
+                    }
+                    while(currNode!=NULL);                              //end of first(nt)
+                }
+                else{   
+                    if(rhs->val.t_val == EPSILON) ep = 1;
+                    parseTable[i][rhs->val.t_val] = j;
+                }
+                rhs = rhs->next;
+            }
 
-			if(ep){											//follow of lhs NT 
-				currNode = follows[i];
-				do{	
-					parseTable[i][currNode->val.t_val] = j;
-					currNode = currNode->next;
-				}
-				while(currNode!=NULL);	
-				
-			}
-			ep = 1;
-		}
-	}
+            if(ep){                                         //follow of lhs NT 
+                currNode = follows[i];
+                do{ 
+                    parseTable[i][currNode->val.t_val] = j;
+                    currNode = currNode->next;
+                }
+                while(currNode!=NULL);  
+                
+            }
+            ep = 1;
+        }
+    }
 
-}
-
-int** getParseTable(){
-	return parseTable;
 }
 
 void printParseTable(){
-	for(int i = 0; i < NT_COUNT; i++){
-		for(int j = 0; j < TOKEN_COUNT; j++){
-			if(parseTable[i][j]!=-1) printf("%d ", parseTable[i][j]);
-			// fflush(stdout);
+    for(int i = 0; i < NT_COUNT; i++){
+        for(int j = 0; j < TOKEN_COUNT; j++){
+            if(parseTable[i][j]!=-1) printf("%d ", parseTable[i][j]);
             if(j == TOKEN_COUNT-1) printf("\n");
-		}
-	}
+        }
+    }
 }
 
 void parseInputSourceCode(char *testcaseFile, int** parseTable){
@@ -100,29 +93,43 @@ void parseInputSourceCode(char *testcaseFile, int** parseTable){
     fp = getStream(fp);
     Stack* mainStack = newStack(); 
     token placeholder;
-    push(mainStack, );
-    push(mainStack, createNewTerm(placeholder, program, 0));
+    push(mainStack, createNewTerm(ENDOFFILE,0,0));
+    push(mainStack, createNewTerm(placeholder, program, 1));
+    int tek = 0;
     tokenInfo* readToken = getNextToken();
+    tek++;
     TREENODE t1 = initTree();
-    if(readToken == NULL)
+    if(readToken == ENDOFFILE)
     {
         printf("File is empty\n");
     }
     while(!reachEnd(mainStack))
-    {
+    {   
+        printf("%d ",readToken->token); printT(readToken->token); printf("\n");  
+        fflush(stdout);
+
+        // printToken(readToken);
+        // printf("\n");
+        // fflush(stdout);
+        
         NODE temp = top(mainStack);
+
         pop(mainStack);
-        while(temp->val.t_val == 0)
+        if(temp->tnt == 0)
         {
+            // printf("Working\n");
+            // fflush(stdout);            
+            printT(temp->val.t_val); printf("\n");
             if(temp->val.t_val != readToken->token)
             {
                 if(temp->val.t_val == EPSILON)
                 {
+                    printToken(readToken);
                     temp = top(mainStack);
                     pop(mainStack);
                     continue;
                 }
-                if(readToken->token == NULL)
+                if(readToken->token == ENDOFFILE)
                 {
                     printf("ERROR: Input consumed but Stack not empty\n");
                     break; // CHECK
@@ -138,9 +145,9 @@ void parseInputSourceCode(char *testcaseFile, int** parseTable){
             }
             else // TOP OF STACK MATCHES WITH TOKEN
             {
-                temp = top(mainStack);
-                pop(mainStack);
-                readToken = getNextToken();
+                // temp = top(mainStack);
+                // pop(mainStack);
+                // readToken = getNextToken();
                 if(reachEnd(mainStack))
                 {
                     printf("Finished parsing\n");
@@ -148,8 +155,33 @@ void parseInputSourceCode(char *testcaseFile, int** parseTable){
                 continue;
             }
         }
+        else if(temp->tnt==1){
+            printNT(temp->val.nt_val);
+            printf("\n");
+            fflush(stdout);
+            
+
+            int x = parseTable[temp->val.nt_val][readToken->token];
+
+            printf("%d",x);
+            fflush(stdout);
+            if(x!=-1){
+                printf("test");
+                fflush(stdout);
+                pushDerivation(mainStack,table[temp->val.nt_val][x]);
+                readToken = getNextToken();
+
+            }
+            else{
+                printf("ERROR: Syntactic error\n");
+            }
+        }
+        else{
+            printf("ERROR: Stack emptied before input consumed\n");
+        }
+
+
         
-        // NEED TO REPLACE NON TERMINALS IDK HOW TO USE PARSE TABLE
         
     }
 
@@ -157,7 +189,7 @@ void parseInputSourceCode(char *testcaseFile, int** parseTable){
 }
 
 void computeFirsts(){
-	firsts = (NODE*) malloc(NT_COUNT * sizeof(NODE));
+    firsts = (NODE*) malloc(NT_COUNT * sizeof(NODE));
     for(int i = 0; i<NT_COUNT; i++)
     {
         firsts[i] = (NODE) malloc(RULE_COUNT * sizeof(node));
@@ -669,7 +701,7 @@ void computeFirsts(){
 }
 
 void computeFollows(){
-	follows = (NODE*) malloc(NT_COUNT * sizeof(NODE));
+    follows = (NODE*) malloc(NT_COUNT * sizeof(NODE));
     for(int i = 0; i<NT_COUNT; i++)
     {
         follows[i] = (NODE) malloc(RULE_COUNT * sizeof(node));
@@ -852,47 +884,73 @@ void computeFollows(){
 }
 
 NODE* getFollows(void){
-	return follows;
+    return follows;
 }
 
 NODE* getFirsts(void){
-	return firsts;
+    return firsts;
+}
+
+int** getParseTable(){
+    return parseTable;
 }
 
 void printFirsts(void)
 {
-	for(int i = 0;i < NT_COUNT; i++)
-	{
-		if(firsts[i] != NULL)
-		{
-			NODE temp = firsts[i];
-			temp = temp->next;
-			while(temp!=NULL)
-			{
-				printf("%d ", temp->val.t_val);
-				temp = temp->next;
-			}
-		}
-		printf("\n");
-	}
-		
+    for(int i = 0;i < NT_COUNT; i++)
+    {
+        if(firsts[i] != NULL)
+        {
+            NODE temp = firsts[i];
+            temp = temp->next;
+            while(temp!=NULL)
+            {
+                printf("%d ", temp->val.t_val);
+                temp = temp->next;
+            }
+        }
+        printf("\n");
+    }
+        
 }
 
 void printFollows(void)
 {
-	for(int i = 0;i < NT_COUNT; i++)
-	{
-		if(follows[i] != NULL)
-		{
-			NODE temp = follows[i];
-			temp = temp->next;
-			while(temp!=NULL)
-			{
-				printf("%d ", temp->val.t_val);
-				temp = temp->next;
-			}
-		}
-		printf("\n");
-	}
-		
+    for(int i = 0;i < NT_COUNT; i++)
+    {
+        if(follows[i] != NULL)
+        {
+            NODE temp = follows[i];
+            temp = temp->next;
+            while(temp!=NULL)
+            {
+                printf("%d ", temp->val.t_val);
+                temp = temp->next;
+            }
+        }
+        printf("\n");
+    }
+        
+}
+
+void runParser()
+{
+    // FILE * fp = fopen(,"r");
+    // fp = getStream(fp);
+    // buildGrammar();
+    // computeFirsts();
+    // computeFollows();
+    // createParseTable();
+    // parseInputSourceCode("input.txt", getParseTable());
+    // Stack* mainStack = newStack();
+
+    // NODE temp2 = createNewTerm(10, 10, 0);
+    // printNT(temp2->tnt);
+    // push(mainStack, createNewTerm(0, 0, 10));
+    // push(mainStack, createNewTerm( 0, 0, 0));
+    // printf("%d\n", mainStack->list1->count);
+    // push(mainStack, createNewTerm( 0, 0, 0));
+    // printStack(mainStack);
+
+    
 }

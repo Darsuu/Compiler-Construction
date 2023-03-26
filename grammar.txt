@@ -1,0 +1,82 @@
+Group No. : 42
+ID: 2020A7PS1214P	Name: Darshan Abhaykumar
+ID: 2020A7PS0970P	Name: Debjit Kar
+ID:2020A7PS0986P	Name: Nidhish Parekh
+
+Production rules
+
+<program> → <moduleDeclarations><otherModules><driverModule><otherModules>
+<moduleDeclarations> → <moduleDeclaration><moduleDeclarations> | EPSILON    
+<moduleDeclaration> →  DECLARE MODULE ID SEMICOL 
+<otherModxules> →  <module><otherModules> | EPSILON     
+<driverModule> → DRIVERDEF DRIVER PROGRAM DRIVERENDDEF <moduleDef>
+<module> → DEF MODULE ID ENDDEF TAKES INPUT SQBO <input_plist> SQBC SEMICOL <ret><moduleDef>
+<ret>  → RETURNS SQBO <output_plist> SQBC SEMICOL | EPSILON
+<input_plist> → ID COLON <dataType> <input_plist2>
+<input_plist2> → COMMA ID COLON <dataType> <input_plist2> | EPSILON
+<output_plist> → ID COLON <type> <output_plist2>
+<output_plist2> → COMMA ID COLON <type> <output_plist2> | EPSILON
+<dataType> → INTEGER | REAL | BOOLEAN | ARRAY SQBO <arr_range> SQBC OF <type>
+<arr_range>→ <arr_index>< RANGEOP <arr_index>
+<type> → INTEGER | REAL | BOOLEAN
+<moduleDef>  →START <statements> END
+<statements>→ <statement> <statements> | EPSILON 
+<statement> → <ioStmt> | <simpleStmt> | <declareStmt> | <conditionalStmt> | <iterativeStmt>
+<ioStmt> →GET_VALUE BO ID BC SEMICOL | PRINT BO <print_var> BC SEMICOL
+<boolVal> →TRUE | FALSE
+<print_var> → ID <which_ID> | NUM | RNUM | <boolVal>
+<which_ID> → SQBO <num_or_id> SQBC | EPSILON
+<simpleStmt>  →<assignmentStmt> | <moduleReuseStmt>
+<assignmentStmt> → ID <whichStmt>
+<whichStmt> →<lvalueIDStmt> | <lvalueARRStmt>
+<lvalueIDStmt> → ASSIGNOP <expression> SEMICOL
+<lvalueARRStmt> → SQBO <exprIndex> SQBC ASSIGNOP <expression> SEMICOL
+<arr_index> → <sign><num_or_id>
+<num_or_id> → NUM | ID
+<sign> → PLUS | MINUS |  ε
+<moduleReuseStmt> → <optional> USE MODULE ID WITH PARAMETERS <actual_para_list> SEMICOL
+<actual_para_list> → <sign> <K> <Term9>
+<Term9> → COMMA <sign> <K> <Term9> | EPSILON
+<K> → NUM | RNUM | <boolVal> | ID <actual_para_list2>
+<actual_para_list2> → SQBO <exprIndex> SQBC | EPSILON
+<optional> → SQBO <idList> SQBC ASSIGNOP | EPSILON 
+<idList> -> ID <idList2>
+<idList2> -> COMMA ID <idList2> | EPSILON
+<expression> -> <abExpr> | <U>
+<U> -> <uni_op> <new_NT>
+<new_NT> -> BO <arithmeticExpr> BC | <con_var>
+<uni_op> → PLUS | MINUS 
+<abExpr> → <AnyTerm> <Term7>
+<Term7> → <logicalOp><AnyTerm><Term7> | EPSILON
+<AnyTerm> → <arithmeticExpr> <Term8> | <boolVal>
+<Term8> → <relationalOp> <arithmeticExpr> | EPSILON
+<con_var> → ID | NUM | RNUM
+<arithmeticExpr> → <term>  <arithmeticExpr2>
+<arithmeticExpr2> → <low_op> <term>  <arithmeticExpr2> | EPSILON
+<term> → <factor> <term2>
+<term2> → <high_op> <factor> <term2> | EPSILON
+<factor> → BO <abExpr> BC
+<factor> -> NUM | RNUM | <boolVal> | ID <factor2>
+<factor2> -> SQBO <exprIndex> SQBC | EPSILON
+<exprIndex> → <sign> <exprIndex2> | <arrExpr>
+<exprIndex2> → <num_or_id> | BO <arrExpr> BC
+<arrExpr> → <arrTerm> <arrExpr2>
+<arrExpr2> → <low_op> <arrTerm> <arrExpr2> | EPSILON
+<arrTerm> → <arrFactor> <arrTerm2>
+<arrTerm2> → <high_op> <arrFactor> <arrTerm2> | EPSILON
+<arrFactor> → ID | NUM | <boolVal> | BO <arrExpr> BC
+<low_op> → PLUS | MINUS
+<high_op> → MUL | DIV
+<logicalOp>→ AND | OR
+<relationalOp>→  LT | LE | GT | GE | EQ | NE
+<declareStmt>→  DECLARE <idList> COLON <dataType> SEMICOL
+<conditionalStmt>→ SWITCH BO ID BC START <caseStmts><default_stmt> END
+<caseStmts>→ CASE <value> COLON <statements> BREAK SEMICOL <caseStmts2>
+<caseStmts2>→ CASE <value> COLON <statements> BREAK SEMICOL <caseStmts2> | EPSILON
+<value> →NUM | TRUE | FALSE
+<default_stmt> →DEFAULT COLON <statements> BREAK SEMICOL | EPSILON 
+<iterativeStmt>→ FOR BO ID IN <for_range> BC START <statements> END | WHILE BO <abExpr> BC START <statements> END
+<for_range> → <for_index> RANGEOP <for_index>
+<for_index> → <for_sign> <for_index2>
+<for_index2> → NUM
+<for_sign> → PLUS | MINUS | EPSILON

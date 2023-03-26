@@ -1,10 +1,25 @@
+/*
+Group No. : 42
+ID: 2020A7PS1214P	Name: Darshan Abhaykumar
+ID: 2020A7PS0970P	Name: Debjit Kar
+ID:2020A7PS0986P	Name: Nidhish Parekh
+*/
 #include "grammarDef.h"
-#include "linkedlist.h"
+#include "grammar.h"
+#include "parser.h"
+#include "parserDef.h"
+#include "stack.h"
 #include "lexerDef.h"
-#include <stdlib.h>
+#include "lexer.h"
+#include "linkedlist.h"
+#include "tree.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 RULE** table;
+NODE* firsts;
+NODE* follows;
+int** parseTable;
 
 void printNT(NT term){
 	switch(term){
@@ -77,9 +92,94 @@ void printNT(NT term){
     case 66: printf("<sign>"); break; 
     case 67: printf("<whichStmt>"); break; 
     case 68: printf("<assignmentStmt>"); break; 
-    case 69: printf("<simpleStmt>"); break; 
+    case 69: printf("<simpleStmt>"); break;
+    case 70: printf("<actual_para_list>"); break;
+    case 71: printf("<actual_para_list2>"); break;
+    case 72: printf("<Term9>"); break;
+    case 73: printf("<K>"); break; 
     
 	default: printf("<unknown>"); break; 
+	}
+}
+
+void fprintNT(FILE* fp, NT term){
+	switch(term){
+	case 0: fprintf(fp, "<program>"); break; 
+	case 1: fprintf(fp, "<moduleDeclarations>"); break; 
+	case 2: fprintf(fp, "<moduleDeclaration>"); break; 
+	case 3: fprintf(fp, "<otherModules>"); break; 
+    case 4: fprintf(fp, "<driverModule>"); break;         
+    case 5: fprintf(fp, "<module>"); break; 
+    case 6: fprintf(fp, "<ret>"); break; 
+    case 7: fprintf(fp, "<input_plist>"); break; 
+    case 8: fprintf(fp, "<input_plist2>"); break; 
+    case 9: fprintf(fp, "<output_plist>"); break; 
+    case 10: fprintf(fp, "<output_plist2>"); break; 
+    case 11: fprintf(fp, "<dataType>"); break; 
+    case 12: fprintf(fp, "<arr_range>"); break;         
+    case 13: fprintf(fp, "<arr_index>"); break; 
+    case 14: fprintf(fp, "<num_or_id>"); break; 
+    case 15: fprintf(fp, "<type>"); break; 
+    case 16: fprintf(fp, "<moduleDef>"); break; 
+    case 17: fprintf(fp, "<statements>"); break; 
+    case 18: fprintf(fp, "<statement>"); break; 
+    case 19: fprintf(fp, "<ioStmt>"); break; 
+    case 20: fprintf(fp, "<boolVal>"); break;         
+    case 21: fprintf(fp, "<print_var>"); break; 
+    case 22: fprintf(fp, "<which_ID>"); break; 
+    case 23: fprintf(fp, "<for_range>"); break; 
+    case 24: fprintf(fp, "<for_index>"); break; 
+    case 25: fprintf(fp, "<for_index2>"); break; 
+    case 26: fprintf(fp, "<for_sign, >"); break; 
+    case 27: fprintf(fp, "<iterativeStmt>"); break; 
+    case 28: fprintf(fp, "<default_stmt>"); break;         
+    case 29: fprintf(fp, "<value>"); break; 
+    case 30: fprintf(fp, "<caseStmts>"); break; 
+    case 31: fprintf(fp, "<caseStmts2>"); break; 
+    case 32: fprintf(fp, "<conditionalStmt>"); break; 
+    case 33: fprintf(fp, "<declareStmt>"); break; 
+    case 34: fprintf(fp, "<relationalOp>"); break; 
+    case 35: fprintf(fp, "<logicalOp>"); break; 
+    case 36: fprintf(fp, "<Term8>"); break; 
+    case 37: fprintf(fp, "<AnyTerm>"); break; 
+    case 38: fprintf(fp, "<Term7>"); break; 
+    case 39: fprintf(fp, "<abExpr>"); break; 
+    case 40: fprintf(fp, "<uni_op>"); break;         
+    case 41: fprintf(fp, "<new_NT>"); break; 
+    case 42: fprintf(fp, "<U>"); break; 
+    case 43: fprintf(fp, "<high_op>"); break; 
+    case 44: fprintf(fp, "<low_op>"); break; 
+    case 45: fprintf(fp, "<factor>"); break; 
+    case 46: fprintf(fp, "<factor2>"); break; 
+    case 47: fprintf(fp, "<exprIndex>"); break; 
+    case 48: fprintf(fp, "<exprIndex2>"); break; 
+    case 49: fprintf(fp, "<arrExpr>"); break; 
+    case 50: fprintf(fp, "<arrExpr2>"); break; 
+    case 51: fprintf(fp, "<arrTerm>"); break; 
+    case 52: fprintf(fp, "<arrTerm2>"); break; 
+    case 53: fprintf(fp, "<arrFactor>"); break;         
+    case 54: fprintf(fp, "<term2>"); break; 
+    case 55: fprintf(fp, "<term>"); break; 
+    case 56: fprintf(fp, "<arithmeticExpr2>"); break; 
+    case 57: fprintf(fp, "<arithmeticExpr>"); break; 
+    case 58: fprintf(fp, "<expression>"); break; 
+    case 59: fprintf(fp, "<idList2>"); break; 
+    case 60: fprintf(fp, "<idList>"); break; 
+    case 61: fprintf(fp, "<con_var>"); break; 
+    case 62: fprintf(fp, "<optional>"); break; 
+    case 63: fprintf(fp, "<moduleReuseStmt>"); break; 
+    case 64: fprintf(fp, "<lvalueARRStmt>"); break; 
+    case 65: fprintf(fp, "<lvalueIDStmt>"); break; 
+    case 66: fprintf(fp, "<sign>"); break; 
+    case 67: fprintf(fp, "<whichStmt>"); break; 
+    case 68: fprintf(fp, "<assignmentStmt>"); break; 
+    case 69: fprintf(fp, "<simpleStmt>"); break;
+    case 70: fprintf(fp, "<actual_para_list>"); break;
+    case 71: fprintf(fp, "<actual_para_list2>"); break;
+    case 72: fprintf(fp, "<Term9>"); break;
+    case 73: fprintf(fp, "<K>"); break; 
+    
+	default: fprintf(fp, "<unknown>"); break; 
 	}
 }
 
@@ -118,7 +218,6 @@ void buildGrammar(){
 
     table[otherModules][1] = createNewRule(otherModules,5);
     addTermToRule(table[otherModules][1],EPSILON,rhs,0); 
-
 
     table[driverModule][0] = createNewRule(driverModule,6);
     addTermToRule(table[driverModule][0],DRIVERDEF,rhs,0);
@@ -343,7 +442,7 @@ void buildGrammar(){
     addTermToRule(table[moduleReuseStmt][0],ID,rhs,0);
     addTermToRule(table[moduleReuseStmt][0],WITH,rhs,0);
     addTermToRule(table[moduleReuseStmt][0],PARAMETERS,rhs,0);
-    addTermToRule(table[moduleReuseStmt][0],terminal,factor,1);
+    addTermToRule(table[moduleReuseStmt][0],terminal,actual_para_list,1);
     addTermToRule(table[moduleReuseStmt][0],SEMICOL,rhs,0);
 
     table[factor][0] = createNewRule(factor,56);
@@ -370,8 +469,7 @@ void buildGrammar(){
     addTermToRule(table[factor2][0],SQBC,rhs,0);
 
     table[factor2][1] = createNewRule(factor2,61);
-        addTermToRule(table[factor2][1],EPSILON,rhs,0); 
-
+    addTermToRule(table[factor2][1],EPSILON,rhs,0); 
 
     table[optional][0] = createNewRule(optional,62);
     addTermToRule(table[optional][0],SQBO,rhs,0);
@@ -380,8 +478,7 @@ void buildGrammar(){
     addTermToRule(table[optional][0],ASSIGNOP,rhs,0);
 
     table[optional][1] = createNewRule(optional,63);
-        addTermToRule(table[optional][1],EPSILON,rhs,0); 
-
+    addTermToRule(table[optional][1],EPSILON,rhs,0); 
 
     table[idList][0] = createNewRule(idList,64);
     addTermToRule(table[idList][0],ID,rhs,0);
@@ -393,8 +490,7 @@ void buildGrammar(){
     addTermToRule(table[idList2][0],terminal,idList2,1);
 
     table[idList2][1] = createNewRule(idList2,66);
-        addTermToRule(table[idList2][1],EPSILON,rhs,0); 
-
+    addTermToRule(table[idList2][1],EPSILON,rhs,0); 
 
     table[expression][0] = createNewRule(expression,67);
     addTermToRule(table[expression][0],terminal,abExpr,1);
@@ -673,6 +769,53 @@ void buildGrammar(){
 
     table[for_sign][2] = createNewRule(for_sign,134);
     addTermToRule(table[for_sign][2],EPSILON,rhs,0); 
+
+    table[actual_para_list][0] = createNewRule(actual_para_list,135);
+    addTermToRule(table[actual_para_list][0],terminal,sign,1);
+    addTermToRule(table[actual_para_list][0],terminal,K,1);
+    addTermToRule(table[actual_para_list][0],terminal,Term9,1);
+
+    table[Term9][0] = createNewRule(Term9,136);
+    addTermToRule(table[Term9][0],COMMA,rhs,0);
+    addTermToRule(table[Term9][0],terminal,sign,1);
+    addTermToRule(table[Term9][0],terminal,K,1);
+    addTermToRule(table[Term9][0],terminal,Term9,1);
+
+    table[Term9][1] = createNewRule(Term9,137);
+    addTermToRule(table[Term9][1],EPSILON,rhs,0);
+
+    table[K][0] = createNewRule(K,138);
+    addTermToRule(table[K][0],NUM,rhs,0);
+
+    table[K][1] = createNewRule(K,139);
+    addTermToRule(table[K][1],RNUM,rhs,0);
+
+    table[K][2] = createNewRule(K,140);
+    addTermToRule(table[K][2],terminal,boolVal,1);
+
+    table[K][3] = createNewRule(K,141);
+    addTermToRule(table[K][3],ID,rhs,0);
+    addTermToRule(table[K][3],terminal,actual_para_list2,1);
+
+    table[actual_para_list2][0] = createNewRule(actual_para_list2,142);
+    addTermToRule(table[actual_para_list2][0],SQBO,rhs,0);
+    addTermToRule(table[actual_para_list2][0],terminal,exprIndex,1);
+    addTermToRule(table[actual_para_list2][0],SQBC,rhs,0);
+
+    table[actual_para_list2][1] = createNewRule(actual_para_list2,143);
+    addTermToRule(table[actual_para_list2][1],EPSILON,rhs,0);
 }
 
+void runGrammar()
+{
+    firsts = getFirsts();
+    firsts = (NODE*) malloc(NT_COUNT * sizeof(NODE));
+    for(int i = 0; i<NT_COUNT; i++)
+    {
+        firsts[i] = (NODE) malloc(RULE_COUNT * sizeof(node));
+    }
 
+    NODE temp = createNewTerm(10, 10, 0);
+    printNT(temp->val.nt_val);
+    // addTermToSet(temp,firsts[/*jiska first set ban raha hai*/]);
+}

@@ -1,3 +1,19 @@
+/*
+Group No. : 42
+ID: 2020A7PS1214P	Name: Darshan Abhaykumar
+ID: 2020A7PS0970P	Name: Debjit Kar
+ID:2020A7PS0986P	Name: Nidhish Parekh
+*/
+
+/*
+    This file is being used by the driver file to simulate the lexer.
+    The lexer implements a twin buffer for efficient convertion of char
+    stream into a token stream. The runLexer() will get called by the driver which
+    tokensies the entire file. The getNextToken() will be used by the parses for 
+    getting the token sequentially
+
+*/
+
 #ifndef LEXER_C
 #define LEXER_C
 #include "lexerDef.h"
@@ -7,28 +23,32 @@
 #include <stdlib.h>
 #include <limits.h>
 
-int line, b_id, forward, begin, i;
-int charCount = 1;
-int first_load = 1;
-int spill = 0;
+int line, b_id, beg_id, forward, begin;
+int BufferSize;
+int charCount = 1, first_load = 1, spill = 0;
+int switched = 0;
 buffer b;
 HTableEntry ht[MODULO];
-
-int b_idB,b_idF;
+tokenInfo* t;
+FILE* fp;
 char *lexeme;
 
-void initialize(FILE *fp){
-    memset(b.one,0,sizeof(b.one));
-    memset(b.two,0,sizeof(b.two));
-    b_id = 1;
-    b_idF = 1;
+void freeData();
+void initializeLexerOnce()
+{
+    for(int i=0;i<MODULO;i++) ht[i].valid = 0;
+    initTable(ht);
+}
+
+void initialize(FILE *fp)
+{
+    b.one = (char *) malloc(BufferSize*sizeof(char));
+    b.two = (char *) malloc(BufferSize*sizeof(char));
+    b_id = 0;
     line = 1;
     forward = 0;
     begin = 0;
-    for(i=0;i<MODULO;i++) ht[i].valid = 0;
-    initTable(ht);
-    fread(b.one,sizeof(char),BUFFER_SIZE,fp); // CHANGED
-    fread(b.two,sizeof(char),BUFFER_SIZE,fp); // CHANGED
+    fread(b.one,sizeof(char),BufferSize,fp);
 }
 
 //if no more to read, buffer unchanged
@@ -38,80 +58,88 @@ FILE* getStream(FILE *fp){
         return NULL;
     }
     if(first_load == 1){
-    initialize(fp);
-    first_load = 0;
-    return fp;
-    }
-
-    if(b_id == 2){
-        fread(b.one,BUFFER_SIZE,1,fp);
-        b_id = 1;
-        return fp;
-    }
-
-    else{
-        fread(b.two,BUFFER_SIZE,1,fp);
-        b_id = 2;
+        initialize(fp);
+        first_load = 0;
         return fp;
     }
 }
-void flipBuffer(char c){
-    if(c == 'B'){
-        if(b_idB == 1) b_idB = 2;
-        else b_idB = 1;
+
+void readNextBuffer(){
+    if(switched)
+    {
+        switched = 0;
+        return;
     }
-    if(c == 'F'){
-        if(b_idF == 1) b_idF = 2;
-        else b_idF = 1;
+    else
+    {
+        if(b_id == 1)
+        {
+            int read = fread(b.one,sizeof(char),BufferSize,fp);
+            if(read != sizeof(char) * BufferSize) b.one[read] = NULL;
+        }
+        else
+        {
+            int read = fread(b.two,sizeof(char),BufferSize,fp);
+            if(read != sizeof(char) * BufferSize) b.two[read] = NULL;
+        }
     }
+    
 }
-void retract(int n){
+
+
+void flipBuffer(){ // USED BY FORWARD TO SWITCH BUFFER
+    readNextBuffer();
+    b_id = (b_id+1)%2;
+}
+
+void retract(int n, int* indexptr){
     if(forward-n>=0) {
         forward -= n;
     }
     else{
-        flipBuffer('F');
-        forward = forward - n + BUFFER_SIZE;
+        b_id = (b_id+1)%2;
+        switched = 1;
+        forward = forward - n + BufferSize;
     }
-    if(begin-n>=0) {
-        begin -= n;
-    }
-    else{
-        flipBuffer('B');
-        begin = begin - n + BUFFER_SIZE;
-    }
-
-    if(begin!=forward) printf("\n**Error in retraction**\n");
+    int index = *indexptr - 1;
+    while(n-->0) lexeme[index--] = '\0';
+    *indexptr = index+1;
 }
 
-char getNextChar(){
-    if(forward+1>BUFFER_SIZE){
-        flipBuffer('F');
-        forward -= BUFFER_SIZE;
-    }
-    if(b_idF==1) return b.one[forward++];
-    else return b.two[forward++];
+char getNextChar(int num){
+    if(b_id == 0) lexeme[num] = b.one[forward++];
+    else lexeme[num] = b.two[forward++];
+
+    if(forward>=BufferSize)
+    {
+        flipBuffer();
+        forward = 0;
+    } 
+    
+    return lexeme[num];
 }
 
-void incB(){
-    if(++begin>BUFFER_SIZE){
-        flipBuffer('B');
-        begin -= BUFFER_SIZE;
+void resetLexeme(int* indexptr){
+    *indexptr = 0;
+    for(int i = 0; i<MAX_LEXEME; i++)
+    {
+        if(lexeme[i] == NULL) break;
+        else lexeme[i] = '\0';
     }
 }
 
 tokenInfo* getNextToken(){
     char c; // Stores character pointed by forward pointer in either buffer one or buffer two
+    int index = 0;
     int state = 1;
     lexeme = (char*) malloc(MAX_LEXEME);
-    tokenInfo* t = (tokenInfo*) malloc(sizeof(tokenInfo));
-
+    t = (tokenInfo*) malloc(sizeof(tokenInfo));
     while(state > -1){
         switch(state){
-           
+            
             case 1:  // start state
             {   
-                c = getNextChar();
+                c = getNextChar(index++);
                 if(c == '\n') state = 48;
                 else if (c == ':')  state = 12;
                 else if (c == '<')  state = 17;
@@ -127,7 +155,7 @@ tokenInfo* getNextToken(){
                 else if (c == '[')  state = 45;
                 else if (c == ']')  state = 42;
                 else if (c == '=')  state = 43;
-                else if (c == '\t' || c == ' ') state = 46;
+                else if (c == '\t' || c == ' ' || c == '\r') state = 46;
                 else if (c == ')')  state = 47;
                 else if (c == '.')  state = 49;
                 else if (c == NULL) state = 51;
@@ -135,7 +163,6 @@ tokenInfo* getNextToken(){
                 else if ((c >= 'a' && c <= 'z')||(c >= 'A' && c <= 'Z') || c == '_')  state = 35;
                 else { 
                     state = 1;
-                    incB();
                     printf("\033[0;31mError: Invalid character : Line Number %d \033[0m  \n", line);
                 }
                 break;
@@ -143,15 +170,13 @@ tokenInfo* getNextToken(){
 
             case 2: 
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if (c >= '0' && c <= '9') state = 2; // self loop
                 else if (c == '.') state = 3; // real num
                 else {
                     t->token = NUM;
                     t->line_num = line;
-                    for(int i = 0;begin<forward-1;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
+                    retract(1, &index);
                     long long temp = strtoll(lexeme, NULL, 10);
                     if(temp == LLONG_MAX)
                     {
@@ -160,8 +185,6 @@ tokenInfo* getNextToken(){
                         break;
                     } 
                     t->tv.i_val = temp;
-                    incB();
-                    retract(1);
                     state = 1;
                     return t; 
                 }
@@ -170,15 +193,13 @@ tokenInfo* getNextToken(){
 
             case 3:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if (c >= '0' && c <= '9') state = 4;
                 else if(c == '.')
                 {   
                     t->token = NUM;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
+                    retract(2, &index);
                     long long temp = strtoll(lexeme, NULL, 10);
                     if(temp == LLONG_MAX)
                     {
@@ -187,34 +208,29 @@ tokenInfo* getNextToken(){
                         break;
                     }
                     t->tv.i_val = temp;
-                    retract(2);
                     state = 1;
                     return t; 
                 }
                 else { 
                     state = 1;
                     printf("\033[0;31mError: Invalid pattern : Line Number %d \033[0m  \n",line);
-                    begin = forward;
-                    retract(1);
+                    retract(1, &index);
+                    resetLexeme(&index);
                 }
                 break;
             }
 
             case 4:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if (c >= '0' && c <= '9') state = 4;
                 else if(c == 'E' || c == 'e') state = 5;
                 else
                 {   
                     t->token = RNUM;
                     t->line_num = line;
-                    for(int i = 0;begin<forward-1;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
-                    incB();
+                    retract(1, &index);
                     t->tv.f_val = atof(lexeme);
-                    retract(1);
                     state = 1;
                     return t; 
                 }
@@ -223,7 +239,7 @@ tokenInfo* getNextToken(){
 
             case 5:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if(c == '+' || c == '-'){
                     state = 11;
                 }
@@ -232,55 +248,46 @@ tokenInfo* getNextToken(){
                 {
                     t->token = RNUM;
                     t->line_num = line;
-                    for(int i = 0;begin<forward-2;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
-                    incB();
-                    incB();
+                    retract(2, &index);
                     t->tv.f_val = atof(lexeme);
-                    retract(2);
                     state = 1;
                     return t;
                 }
                 else{ 
                     state = 1; 
                     printf("\033[0;31mError: Invalid pattern : Line Number %d \033[0m \n", line);
-                    begin = forward;
-                    retract(1);
+                    retract(1, &index);
+                    resetLexeme(&index);
                 }
                 break;
             }
 
             case 11:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if (c >= '0' && c <= '9')
                 {
                     state = 6;
                 }
                 else { 
                     state = 1;
-                    begin = forward;
-                    retract(1);
+                    retract(1, &index);
+                    resetLexeme(&index);
                     printf("\033[0;31mError: Invalid pattern : Line Number %d \033[0m \n", line);
                 }
                 break;
             }
             case 6:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 
                 if (c >= '0' && c <= '9') state = 6;
                 else
                 {   
                     t->token = RNUM;
                     t->line_num = line;
-                    for(int i = 0;begin<forward-1;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
-                    incB();
+                    retract(1, &index);
                     t->tv.f_val = atof(lexeme);
-                    retract(1);
                     state = 1;
                     return t; 
                 }
@@ -289,17 +296,13 @@ tokenInfo* getNextToken(){
 
             case 12:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if(c == '=') state = 13;
                 else{
                     t->token = COLON;
                     t->line_num = line;
-                    for(int i = 0;begin<forward-1;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
-                    incB();
+                    retract(1, &index);
                     strcpy(t->tv.lexeme, lexeme);
-                    retract(1);
                     state = 1;
                     return t;
                 } 
@@ -308,15 +311,12 @@ tokenInfo* getNextToken(){
 
             case 17:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if(c == '<') state = 18;
                 else if(c == '=')
                 {
                     t->token = LE;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t;
@@ -324,12 +324,8 @@ tokenInfo* getNextToken(){
                 else{
                     t->token = LT;
                     t->line_num = line;
-                    for(int i = 0;begin<forward-1;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
-                    incB();
+                    retract(1, &index);
                     strcpy(t->tv.lexeme, lexeme);
-                    retract(1);
                     state = 1;
                     return t; 
                 } 
@@ -338,14 +334,11 @@ tokenInfo* getNextToken(){
 
             case 18:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if(c == '<')
                 {
                     t->token = DRIVERDEF;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -353,12 +346,8 @@ tokenInfo* getNextToken(){
                 else{
                     t->token = DEF;
                     t->line_num = line;
-                    for(int i = 0;begin<forward-1;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
-                    incB();
+                    retract(1, &index);
                     strcpy(t->tv.lexeme, lexeme);
-                    retract(1);
                     state = 1;
                     return t; 
                 } 
@@ -367,15 +356,12 @@ tokenInfo* getNextToken(){
 
             case 25:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if(c == '>') state = 26;
                 else if(c == '=')
                 {
                     t->token = GE;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -383,12 +369,8 @@ tokenInfo* getNextToken(){
                 else{
                     t->token = GT;
                     t->line_num = line;
-                    for(int i = 0;begin<forward-1;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
-                    incB();
+                    retract(1, &index);
                     strcpy(t->tv.lexeme, lexeme);
-                    retract(1);
                     state = 1;
                     return t; 
                 } 
@@ -397,14 +379,11 @@ tokenInfo* getNextToken(){
 
             case 26:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if(c == '>')
                 {
                     t->token = DRIVERENDDEF;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t;
@@ -413,12 +392,8 @@ tokenInfo* getNextToken(){
                 {
                     t->token = ENDDEF;
                     t->line_num = line;
-                    for(int i = 0;begin<forward-1;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
-                    incB();
+                    retract(1, &index);
                     strcpy(t->tv.lexeme, lexeme);
-                    retract(1);
                     state = 1;
                     return t;
                 }
@@ -427,7 +402,7 @@ tokenInfo* getNextToken(){
 
             case 35:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if((c >= 'a' && c <= 'z')||(c >= 'A' && c <= 'Z') || c == '_' || (c>='0' && c<='9')){
                     charCount++;
                     state = 35;
@@ -438,18 +413,14 @@ tokenInfo* getNextToken(){
 
             case 15:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if(c == '*') state = 21;
                 else 
                 {
                     t->token = MUL;
                     t->line_num = line;
-                    for(int i = 0;begin<forward-1;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
-                    incB();
+                    retract(1, &index);
                     strcpy(t->tv.lexeme, lexeme);
-                    retract(1);
                     state = 1;
                     return t; 
                 }
@@ -458,11 +429,13 @@ tokenInfo* getNextToken(){
 
             case 21:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if(c == '*') state = 28;
                 else if(c == NULL)
                 {
                     printf("\033[0;31mError: Reached EOF : Line Number %d \033[0m  \n",line);
+                    t->line_num = line;
+                    t->token = ENDOFFILE;
                     state = -1;
                     return t;
                 }
@@ -477,7 +450,7 @@ tokenInfo* getNextToken(){
 
             case 28:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if(c == '*') state = 29;
                 else state = 21;
                 break;
@@ -485,14 +458,11 @@ tokenInfo* getNextToken(){
 
             case 40:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if(c == '=')
                 {
                     t->token = NE;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -500,29 +470,27 @@ tokenInfo* getNextToken(){
                 else if(c == NULL)
                 {
                     printf("\033[0;31mError: Reached EOF: Line Number %d \033[0m  \n",line);
+                    t->line_num = line;
+                    t->token = ENDOFFILE;
                     state = -1;
                     return t;
                 }
                 else { 
                     state = 1;
+                    retract(1, &index);
+                    resetLexeme(&index);
                     printf("\033[0;31mError: Invalid pattern : Line Number %d \033[0m  \n",line);
-                    incB();
-                    incB();
-                    retract(1);
                 }
                 break;
             }
 
             case 43:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if(c == '=')
                 {
                     t->token = EQ;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -530,14 +498,15 @@ tokenInfo* getNextToken(){
                 else if(c == NULL)
                 {
                     printf("\033[0;31m Error: Reached EOF: Line Number %d \033[0m  \n",line);
+                    t->line_num = line;
+                    t->token = ENDOFFILE;
                     state = -1;
                     return t;
                 }
                 else { 
                     state = 1;
-                    incB();
-                    incB();
-                    retract(1);
+                    retract(1, &index);
+                    resetLexeme(&index);
                     printf("\033[0;31mError: Invalid character : Line Number %d \033[0m  \n", line);
                 }
                 break;
@@ -545,14 +514,11 @@ tokenInfo* getNextToken(){
 
             case 49:
             {
-                c = getNextChar();
+                c = getNextChar(index++);
                 if(c == '.')
                 {
                     t->token = RANGEOP;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -560,15 +526,16 @@ tokenInfo* getNextToken(){
                 else if(c == NULL)
                 {
                     printf("\033[0;31m Error: Reached EOF: Line Number %d \033[0m  \n",line);
+                    t->line_num = line;
+                    t->token = ENDOFFILE;
                     state = -1;
                     return t;
                 }
                 else { 
                     state = 1;
                     printf("\033[0;31mError: Invalid pattern : Line Number %d \033[0m  \n",line);
-                    incB();
-                    incB();
-                    retract(1);
+                    retract(1, &index);
+                    resetLexeme(&index);
                 }
                 break;
             }
@@ -578,11 +545,8 @@ tokenInfo* getNextToken(){
                     
                     t->token = NUM;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
+                    retract(2, &index);
                     t->tv.i_val = atoi(lexeme);
-                    retract(2);
                     state = 1;
                     return t; 
             }
@@ -591,11 +555,8 @@ tokenInfo* getNextToken(){
             {
                     t->token = RNUM;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
+                    retract(1, &index);
                     t->tv.f_val = atof(lexeme);
-                    retract(1);
                     state = 1;
                     return t; 
             }
@@ -605,11 +566,8 @@ tokenInfo* getNextToken(){
                     
                     t->token = RNUM;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
+                    retract(1, &index);
                     t->tv.f_val = atof(lexeme);
-                    retract(1);
                     state = 1;
                     return t; 
             }
@@ -618,16 +576,13 @@ tokenInfo* getNextToken(){
             {
                     t->token = ASSIGNOP;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
             }
             case 29:
             {
-                begin = forward;
+                resetLexeme(&index);
                 state = 1;
                 break;
             }
@@ -636,9 +591,6 @@ tokenInfo* getNextToken(){
             {
                     t->token = PLUS;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -648,9 +600,6 @@ tokenInfo* getNextToken(){
             {
                     t->token = BO;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -659,9 +608,6 @@ tokenInfo* getNextToken(){
             {
                     t->token = MINUS;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -671,9 +617,6 @@ tokenInfo* getNextToken(){
             {
                     t->token = DIV;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -685,20 +628,24 @@ tokenInfo* getNextToken(){
                     {
                         state = 1; 
                         charCount = 1;
-                        begin = forward;
-                        retract(1);
+                        retract(1, &index);
+                        resetLexeme(&index);
                         printf("\033[0;31mError: Len of string too long : Line Number %d \033[0m \n", line);
                         break;
                     }
                     t->line_num = line;
-                    for(int i = 0;begin<forward-1;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    } 
+                    for(int i = strlen(lexeme)-1; i>=0; i--)
+                    {
+                        if(isspace(lexeme[i])) lexeme[i] = '\0';
+                        else break;
+                    }
                     if(getToken(lexeme, ht) == ID) t->token = ID;
-                    else t->token = getToken(lexeme, ht);
-                    incB();
+                    else
+                    {
+                        t->token = getToken(lexeme, ht);
+                    } 
+                    retract(1, &index);
                     strcpy(t->tv.lexeme, lexeme);
-                    retract(1);
                     state = 1;
                     charCount = 1;
                     return t; 
@@ -708,9 +655,6 @@ tokenInfo* getNextToken(){
             {
                     t->token = COMMA;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -720,9 +664,6 @@ tokenInfo* getNextToken(){
             {
                     t->token = SEMICOL;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -731,9 +672,6 @@ tokenInfo* getNextToken(){
             {
                     t->token = SQBC;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -743,9 +681,6 @@ tokenInfo* getNextToken(){
             {
                     t->token = SQBO;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -754,9 +689,6 @@ tokenInfo* getNextToken(){
             {
                     t->token = EQ;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -766,9 +698,6 @@ tokenInfo* getNextToken(){
             {
                     t->token = BC;
                     t->line_num = line;
-                    for(int i = 0;begin<forward;incB(),i++){
-                        lexeme[i] = b.one[begin];
-                    }
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     return t; 
@@ -776,15 +705,15 @@ tokenInfo* getNextToken(){
 
             case 48: 
             {
+                index--;
                 line++;
-                incB();
                 state = 1;
                 break;
             }
 
             case 46: 
             {
-                incB();
+                index--;
                 state = 1;
                 break;
             }
@@ -794,7 +723,6 @@ tokenInfo* getNextToken(){
                 t->line_num = line;
                 t->token = ENDOFFILE;
                 state = -1;
-                //printf("File ended\n");
                 return t;
             }
         }
@@ -875,6 +803,72 @@ void printT(token token){
     printf(" ");
 }
 
+void fprintT(FILE* fp, token token){
+    switch(token){
+    case 0: fprintf(fp,"INTEGER"); break;
+    case 1: fprintf(fp,"REAL"); break;
+    case 2: fprintf(fp,"BOOLEAN"); break;
+    case 3: fprintf(fp,"OF"); break; 
+    case 4: fprintf(fp,"ARRAY"); break;
+    case 5: fprintf(fp,"START"); break;
+    case 6: fprintf(fp,"END"); break;
+    case 7: fprintf(fp,"DECLARE"); break;
+    case 8: fprintf(fp,"MODULE"); break;
+    case 9: fprintf(fp,"DRIVER"); break;
+    case 10: fprintf(fp,"PROGRAM"); break;
+    case 11: fprintf(fp,"GET_VALUE"); break;
+    case 12: fprintf(fp,"PRINT"); break;
+    case 13: fprintf(fp,"USE"); break;
+    case 14: fprintf(fp,"WITH"); break;
+    case 15: fprintf(fp,"PARAMETERS"); break;
+    case 16: fprintf(fp,"TAKES"); break;
+    case 17: fprintf(fp,"INPUT"); break;
+    case 18: fprintf(fp,"RETURNS"); break;
+    case 19: fprintf(fp,"FOR"); break;
+    case 20: fprintf(fp,"IN"); break;
+    case 21: fprintf(fp,"SWITCH"); break;
+    case 22: fprintf(fp,"CASE"); break;
+    case 23: fprintf(fp,"BREAK"); break;
+    case 24: fprintf(fp,"DEFAULT"); break;
+    case 25: fprintf(fp,"WHILE"); break;
+    case 26: fprintf(fp,"ID"); break;
+    case 27: fprintf(fp,"NUM"); break;
+    case 28: fprintf(fp,"RNUM"); break;
+    case 29: fprintf(fp,"AND"); break;
+    case 30: fprintf(fp,"OR"); break;
+    case 31: fprintf(fp,"TRUE"); break;
+    case 32: fprintf(fp,"FALSE"); break;
+    case 33: fprintf(fp,"PLUS"); break;
+    case 34: fprintf(fp,"MINUS"); break;
+    case 35: fprintf(fp,"MUL"); break;
+    case 36: fprintf(fp,"DIV"); break;
+    case 37: fprintf(fp,"LT"); break;
+    case 38: fprintf(fp,"LE"); break;
+    case 39: fprintf(fp,"GE"); break;
+    case 40: fprintf(fp,"GT"); break;
+    case 41: fprintf(fp,"EQ"); break;
+    case 42: fprintf(fp,"NE"); break;
+    case 43: fprintf(fp,"DEF"); break;
+    case 44: fprintf(fp,"ENDDEF"); break;
+    case 45: fprintf(fp,"DRIVERDEF"); break;
+    case 46: fprintf(fp,"DRIVERENDDEF"); break;
+    case 47: fprintf(fp,"COLON"); break;
+    case 48: fprintf(fp,"RANGEOP"); break;
+    case 49: fprintf(fp,"SEMICOL"); break;
+    case 50: fprintf(fp,"COMMA"); break;
+    case 51: fprintf(fp,"ASSIGNOP"); break;
+    case 52: fprintf(fp,"SQBO"); break;
+    case 53: fprintf(fp,"SQBC"); break;
+    case 54: fprintf(fp,"BO"); break;
+    case 55: fprintf(fp,"BC"); break;
+    case 56: fprintf(fp,"COMMENTMARK"); break;
+    case 57: fprintf(fp,"ENDOFFILE"); break;
+    case 58: fprintf(fp,"EPSILON"); break;
+    default: fprintf(fp,"<unknown>"); break;
+    }
+    printf(" ");
+}
+
 void removeComments(char *testcaseFile, char *cleanFile)
 {
     char ch;
@@ -896,7 +890,11 @@ void removeComments(char *testcaseFile, char *cleanFile)
                     if(!found) found = 1;
                     else
                     {
-                        while(new_lines-->0) fputc('\n', fp2);
+                        while(new_lines-->0)
+                        {
+                            fputc('\n', fp2);
+                            printf("\n");
+                        } 
                         found = 0;
                         new_lines = 0;
                     } 
@@ -906,12 +904,15 @@ void removeComments(char *testcaseFile, char *cleanFile)
                 {
                     fputc('*', fp2);
                     fputc(ch2, fp2);
+                    printf("*");
+                    printf("%c", ch2);
                     continue;
                 }
             }
             else
             {
                 fputc('*', fp2);
+                printf("*");
                 break;
             }
         }
@@ -919,16 +920,34 @@ void removeComments(char *testcaseFile, char *cleanFile)
         {
             if(ch == '\n') new_lines++;
             fputc(' ', fp2);
+            printf(" ");
         } 
-        else fputc(ch, fp2);
+        else
+        {
+            fputc(ch, fp2);
+            printf("%c", ch);
+        } 
     }
     fclose(fp1);
     fclose(fp2);
 }
 
-void runLexer(void)
+tokenInfo * runLexerForParser(char* testfile, int size)
 {
-    FILE * fp = fopen("input.txt","r");
+    if(fp == NULL){
+        fp = fopen(testfile,"r");
+        BufferSize = size;
+        fp = getStream(fp);
+    }
+    tokenInfo * parserToken = (tokenInfo *) malloc( sizeof(tokenInfo));
+    parserToken = getNextToken();
+    return parserToken;
+}
+
+void runLexer(char* testfile, int size)
+{
+    fp = fopen(testfile,"r");
+    BufferSize = size;
     fp = getStream(fp);
     tokenInfo * tk = (tokenInfo *) malloc( sizeof(tokenInfo));
     tk = getNextToken();
@@ -940,8 +959,22 @@ void runLexer(void)
         printf("\t");
         printT(tk->token);
         printf("\n");
-
         tk = getNextToken();
-    }
+    } 
+    fclose(fp);
+    freeData();
+    free(tk);
 }
+
+void freeData()
+{
+    free(lexeme);
+    free(b.one);
+    free(b.two);
+    charCount = 1;
+    first_load = 1;
+    spill = 0;
+    switched = 0;
+}
+
 #endif

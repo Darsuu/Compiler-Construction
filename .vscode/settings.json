@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "grammar.h": "c",
+        "stack.h": "c",
+        "nlinkedlist.h": "c",
+        "linkedlist.h": "c",
+        "lexer.h": "c",
+        "treedef.h": "c"
+    }
+}
