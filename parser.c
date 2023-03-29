@@ -17,7 +17,8 @@ ID:2020A7PS0986P    Name: Nidhish Parekh
 int** parseTable;
 NODE* firsts;
 NODE* follows; 
-
+NODE doFirsts(int i);
+NODE doFollows(int i);
 void createParseTable(){
     parseTable = (int**) malloc(NT_COUNT*sizeof(int*));
 
@@ -179,13 +180,106 @@ void parseInputSourceCode(char *testcaseFile, int** parseTable){
         else{
             printf("ERROR: Stack emptied before input consumed\n");
         }
-
-
-        
-        
     }
+}
 
+void automaticFirsts()
+{
+    firsts = (NODE*) malloc(NT_COUNT * sizeof(NODE));
+    for(int i = 0; i<NT_COUNT; i++)
+    {
+        firsts[i] = (NODE) malloc(RULE_COUNT * sizeof(node));
+        firsts[i]->val.nt_val = -1;
+        firsts[i]->val.t_val = -1;
+    }
+    for(int i = 0; i<NT_COUNT; i++)
+    {
+        if(i>=74) continue;
+        if(firsts[i]->next == NULL) doFirsts(i);
+    }
+}
 
+NODE doFirsts(int i)
+{
+    for(int j = 0; j<RULE_COUNT; j++)
+    {
+        RULE curr = table[i][j];
+        if(curr == NULL) break;
+        NODE firstN = curr->head->next;
+        if(firstN->tnt == 0) // IF THE RULE'S FIRST TERM IS A T
+        {
+            NODE temp = createNewTerm(firstN->val.t_val, 0, 0);
+            addTermToSet(temp, firsts[i]);
+
+        }
+        else  // IF THE RULE'S FIRST TERM IS A NT
+        {
+            int doAgain = 0;
+            if(firsts[firstN->val.nt_val]->next != NULL) // IF THE NT's FIRST IS ALREADY DONE
+            {
+                NODE temp2 = firsts[firstN->val.nt_val]->next;
+                while(temp2 != NULL)
+                {
+                    if(temp2->val.t_val == EPSILON) doAgain = 1; // IF WE ENCOUNTER EPSILON THEN WE WILL HAVE TO REPEAT
+                    else
+                    {
+                        NODE temp = createNewTerm(temp2->val.t_val, 0, 0);
+                        addTermToSet(temp, firsts[i]);
+                    }
+                    temp2 = temp2->next;
+                    
+                }
+                if(doAgain)
+                {
+                    firstN = firstN->next;
+                    goto label1;
+                } 
+            }
+            else // IF THE NT's FIRST IS NEW
+            {
+                int start = 1;
+                while(doAgain == 1 || start == 1)
+                {
+                    if(firstN->tnt == 0) 
+                    {
+                        NODE temp2 = createNewTerm(firstN->val.t_val, 0, 0);
+                        addTermToSet(temp2, firsts[i]);
+                        doAgain = 0;
+                        break;
+                    }
+                    if(doAgain == 1)
+                    {
+                        if(firstN == NULL) // IF WE REACHED END OF CURRENT RULE
+                        {
+                            if(table[i][j+1] == NULL) // IF NO OTHER RULE AHEAD AND DOAGAIN == 1 THEN ADD EPSILON
+                            {
+                                NODE temp2 = createNewTerm(EPSILON, 0, 0);
+                                addTermToSet(temp2, firsts[i]);
+                            }
+                            doAgain = 0;
+                            break;
+                        }
+                    }
+                    label1:
+                    start = 0;
+                    doAgain = 0;
+                    NODE temp = doFirsts(firstN->val.nt_val)->next;
+                    while(temp != NULL)
+                    {
+                        if(temp->tnt == 0 && temp->val.t_val == EPSILON) doAgain = 1; // IF WE ENCOUNTER EPSILON THEN WE WILL HAVE TO REPEAT
+                        else
+                        {
+                            NODE temp2 = createNewTerm(temp->val.t_val, 0, 0);
+                            addTermToSet(temp2, firsts[i]);
+                        }
+                        temp = temp->next;
+                    }
+                    firstN = firstN->next;
+                }   
+            }
+        }
+    }
+    return firsts[i];
 }
 
 void computeFirsts(){
@@ -700,6 +794,119 @@ void computeFirsts(){
 
 }
 
+void automaticFollows(){
+    follows = (NODE*) malloc(NT_COUNT * sizeof(NODE));
+    for(int i = 0; i<NT_COUNT; i++)
+    {
+        follows[i] = (NODE) malloc(RULE_COUNT * sizeof(node));
+        follows[i]->val.nt_val = -1;
+        follows[i]->val.t_val = -1;
+    }
+    NODE addingDollar = createNewTerm(ENDOFFILE,0,0);
+    addTermToSet(addingDollar, follows[0]);
+    for(int i = 1; i<NT_COUNT; i++)
+    {
+        if(i>=74) continue;
+        if(follows[i]->next == NULL)
+        {
+            doFollows(i);
+        } 
+    }
+}
+
+NODE doFollows(int searchNT)
+{
+    for(int i = 0; i < NT_COUNT; i++)
+    {
+        for(int j = 0; j < TOKEN_COUNT; j++)
+        {
+            RULE curr = table[i][j];
+            if(curr == NULL) break;
+            NODE firstN = curr->head->next;
+            int lhs = curr->head->val.nt_val;
+            int begin = 1;
+            int found = 0;
+            while(begin == 1 || found == 1)
+            {
+                begin = 0;
+                while(firstN != NULL)
+                {
+                    if(firstN->tnt == 1 && firstN->val.nt_val == searchNT) break;
+                    firstN = firstN->next;
+                } 
+                if(firstN == NULL) break;
+                // printf(" ");
+                // printNT(searchNT);
+                // printNT(firstN->val.nt_val);
+                found = 0;
+                if(firstN->tnt == 1 && firstN->val.nt_val == searchNT) found = 1;
+                if(found == 1 && firstN->next == NULL)
+                {
+                    if(searchNT == lhs) break;
+                    NODE temp0 = doFollows(lhs);
+                    while(temp0 != NULL)
+                    {
+                        NODE temp01 = createNewTerm(temp0->val.t_val, 0, 0);
+                        addTermToSet(temp01, follows[searchNT]);
+                        temp0 = temp0->next;
+                    }
+                }
+                else if(found == 1)
+                {
+                    firstN = firstN->next;
+                    int doAgain = 0;
+                    int start = 1;
+                    while(start == 1 || doAgain  == 1)
+                    {
+                        if(firstN == NULL)
+                        {
+                            if(searchNT == lhs) doAgain = 0;
+                            else
+                            {
+                                NODE temp1 = doFollows(lhs)->next;
+                                while(temp1 != NULL)
+                                {
+                                    NODE temp11 = createNewTerm(temp1->val.t_val, 0, 0);
+                                    addTermToSet(temp11, follows[searchNT]);
+                                    temp1 = temp1->next;
+                                }
+                            }   
+                            break;
+                        }
+                        start = 0;
+                        doAgain = 0;
+                        if(firstN->tnt == 0) // IF THE NEXT ELEMENT IS A T
+                        {
+                            NODE temp2 = createNewTerm(firstN->val.t_val, 0, 0);
+                            addTermToSet(temp2, follows[searchNT]);
+                        }
+                        else
+                        {
+                            NODE temp3 = firsts[firstN->val.nt_val]->next; // IF THE NEXT ELEMENT IS A NT
+                            while(temp3 != NULL)
+                            {
+                                if(temp3->val.t_val == EPSILON) doAgain = 1;
+                                else
+                                {
+                                    NODE temp31 = createNewTerm(temp3->val.t_val, 0, 0);
+                                    addTermToSet(temp31, follows[searchNT]);
+                                }
+                                temp3 = temp3->next;
+                            }
+                        }
+                        firstN = firstN->next;
+                    }
+                    continue;
+                }
+                if(firstN != NULL) firstN = firstN->next; 
+            }
+            
+            // TAKE CARE OF CASE WHEN THE NT APPEARS AT LHS FOR FOLLOW(NT) 
+        }
+    }
+    return follows[searchNT];
+}
+
 void computeFollows(){
     follows = (NODE*) malloc(NT_COUNT * sizeof(NODE));
     for(int i = 0; i<NT_COUNT; i++)
@@ -897,15 +1104,18 @@ int** getParseTable(){
 
 void printFirsts(void)
 {
-    for(int i = 0;i < NT_COUNT; i++)
+    for(int i = 0; i < NT_COUNT; i++)
     {
+        if(i>=74) continue;
         if(firsts[i] != NULL)
         {
+            printNT(i);
             NODE temp = firsts[i];
             temp = temp->next;
             while(temp!=NULL)
             {
-                printf("%d ", temp->val.t_val);
+                printf(" ");
+                printT(temp->val.t_val);
                 temp = temp->next;
             }
         }
@@ -917,14 +1127,17 @@ void printFirsts(void)
 void printFollows(void)
 {
     for(int i = 0;i < NT_COUNT; i++)
-    {
+    {   
+        if(i>=74) continue;
         if(follows[i] != NULL)
         {
+            printNT(i);
             NODE temp = follows[i];
             temp = temp->next;
             while(temp!=NULL)
             {
-                printf("%d ", temp->val.t_val);
+                printf(" ");
+                printT(temp->val.t_val);
                 temp = temp->next;
             }
         }

@@ -91,7 +91,6 @@ void addTermToRule(RULE rule, token t_val, NT nt_val, int tnt){
 
 void printRule(RULE rule){
     NODE temp = rule->head;
-    //printf("%d",temp->val.nt_val);
     printNT(temp->val.nt_val);
     temp = temp->next;
     printf(" --> ");
@@ -128,7 +127,12 @@ void addTermToSet(NODE node, NODE set){
         set->val.t_val = node->val.t_val;
     } 
     else{
-        while(set->next!=NULL) set = set->next;
+        while(set->next!=NULL)
+        {
+            if(set->val.t_val == node->val.t_val) return;
+            set = set->next;
+        }
+        if(set->val.t_val == node->val.t_val) return;
         set->next=node;
     }
 

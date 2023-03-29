@@ -10,6 +10,8 @@ ID:2020A7PS0986P	Name: Nidhish Parekh
 #include "lexerDef.h"
 #include "linkedlist.h"
 
+void automaticFirsts();
+void automaticFollows();
 void computeFirsts();
 void computeFollows();
 

@@ -24,4 +24,5 @@ HTable.o: HTable.c
 	gcc -c HTable.c
 Nlinkedlist.o: Nlinkedlist.c
 	gcc -c Nlinkedlist.c
-clean: rm -rf *o
+clean: 
+	rm *.o runCompiler

@@ -59,16 +59,15 @@ int main(int argc, char*argv[]){
 				break; 
 			}
 			case 2:{
-				// tokenInfo* temp = runLexerForParser(argv[1], atoi(argv[3]));
-				// printToken(temp);
 				runLexer(argv[1], atoi(argv[3]));
 				break;
 			}
 			case 3:{
-				runParser();
-				// CREATING A SAMPLE PARSE TREE HERE TO DEMONSTRATE THE PRINTING AND FORMING OF PARSE TREE
-				// THIS IS NOT THE PARSE TREE THAT IS GENERATED FROM THE INPUT FILE
-				runTree(argv[2]);
+				runGrammar();
+				// runParser();
+				// // CREATING A SAMPLE PARSE TREE HERE TO DEMONSTRATE THE PRINTING AND FORMING OF PARSE TREE
+				// // THIS IS NOT THE PARSE TREE THAT IS GENERATED FROM THE INPUT FILE
+				// runTree(argv[2]);
 				break;
 			}
 			case 4:{

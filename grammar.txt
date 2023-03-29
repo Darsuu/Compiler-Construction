@@ -8,7 +8,7 @@ Production rules
 <program> → <moduleDeclarations><otherModules><driverModule><otherModules>
 <moduleDeclarations> → <moduleDeclaration><moduleDeclarations> | EPSILON    
 <moduleDeclaration> →  DECLARE MODULE ID SEMICOL 
-<otherModxules> →  <module><otherModules> | EPSILON     
+<otherModules> →  <module><otherModules> | EPSILON     
 <driverModule> → DRIVERDEF DRIVER PROGRAM DRIVERENDDEF <moduleDef>
 <module> → DEF MODULE ID ENDDEF TAKES INPUT SQBO <input_plist> SQBC SEMICOL <ret><moduleDef>
 <ret>  → RETURNS SQBO <output_plist> SQBC SEMICOL | EPSILON
@@ -17,7 +17,7 @@ Production rules
 <output_plist> → ID COLON <type> <output_plist2>
 <output_plist2> → COMMA ID COLON <type> <output_plist2> | EPSILON
 <dataType> → INTEGER | REAL | BOOLEAN | ARRAY SQBO <arr_range> SQBC OF <type>
-<arr_range>→ <arr_index>< RANGEOP <arr_index>
+<arr_range>→ <arr_index> RANGEOP <arr_index>
 <type> → INTEGER | REAL | BOOLEAN
 <moduleDef>  →START <statements> END
 <statements>→ <statement> <statements> | EPSILON 

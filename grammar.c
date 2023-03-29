@@ -49,7 +49,7 @@ void printNT(NT term){
     case 23: printf("<for_range>"); break; 
     case 24: printf("<for_index>"); break; 
     case 25: printf("<for_index2>"); break; 
-    case 26: printf("<for_sign, >"); break; 
+    case 26: printf("<for_sign>"); break; 
     case 27: printf("<iterativeStmt>"); break; 
     case 28: printf("<default_stmt>"); break;         
     case 29: printf("<value>"); break; 
@@ -198,6 +198,7 @@ void buildGrammar(){
     addTermToRule(table[program][0],terminal,otherModules,1);
     addTermToRule(table[program][0],terminal,driverModule,1);
     addTermToRule(table[program][0],terminal,otherModules,1);
+    //  addTermToRule(table[program][0],ENDOFFILE,rhs,0);
 
     table[moduleDeclarations][0] = createNewRule(moduleDeclarations,1);
     addTermToRule(table[moduleDeclarations][0],terminal,moduleDeclaration,1);
@@ -374,8 +375,8 @@ void buildGrammar(){
     table[print_var][2] = createNewRule(print_var,38);
     addTermToRule(table[print_var][2],RNUM,rhs,0);
  
-    table[print_var][2] = createNewRule(print_var,39);
-    addTermToRule(table[print_var][2],terminal,boolVal,1);
+    table[print_var][3] = createNewRule(print_var,39);
+    addTermToRule(table[print_var][3],terminal,boolVal,1);
 
     table[which_ID][0] = createNewRule(which_ID,40);
     addTermToRule(table[which_ID][0],SQBO,rhs,0);
@@ -808,14 +809,11 @@ void buildGrammar(){
 
 void runGrammar()
 {
-    firsts = getFirsts();
-    firsts = (NODE*) malloc(NT_COUNT * sizeof(NODE));
-    for(int i = 0; i<NT_COUNT; i++)
-    {
-        firsts[i] = (NODE) malloc(RULE_COUNT * sizeof(node));
-    }
-
-    NODE temp = createNewTerm(10, 10, 0);
-    printNT(temp->val.nt_val);
-    // addTermToSet(temp,firsts[/*jiska first set ban raha hai*/]);
+    buildGrammar();
+    automaticFirsts();
+    // computeFirsts();
+    // printFirsts();
+    automaticFollows();
+    // computeFollows();
+    printFollows();
 }

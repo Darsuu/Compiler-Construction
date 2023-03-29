@@ -10,7 +10,7 @@ ID:2020A7PS0986P	Name: Nidhish Parekh
 #define LEXERDEF_H
 #define MAX_LEXEME (1<<15)
 #define TOKEN_COUNT 60
-typedef enum { 
+typedef enum {
     INTEGER,
      REAL,
      BOOLEAN,

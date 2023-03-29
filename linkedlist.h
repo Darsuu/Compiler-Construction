@@ -5,7 +5,7 @@
 
 struct node
 {
-    int tnt;//0 is terminal i.e. token and 1 is non terminal
+    int tnt; //0 is terminal i.e. token and 1 is non terminal
     union {
         token t_val;
         NT nt_val;

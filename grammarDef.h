@@ -9,7 +9,7 @@ ID:2020A7PS0986P	Name: Nidhish Parekh
 #include "lexerDef.h"
 
 #define RULE_COUNT 20//
-#define NT_COUNT 80//
+#define NT_COUNT 79//
 
 typedef enum {
 	program,

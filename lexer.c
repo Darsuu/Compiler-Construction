@@ -58,6 +58,7 @@ FILE* getStream(FILE *fp){
         return NULL;
     }
     if(first_load == 1){
+        
         initialize(fp);
         first_load = 0;
         return fp;
@@ -941,6 +942,11 @@ tokenInfo * runLexerForParser(char* testfile, int size)
     }
     tokenInfo * parserToken = (tokenInfo *) malloc( sizeof(tokenInfo));
     parserToken = getNextToken();
+    // if(parserToken->token == ENDOFFILE)
+    // {
+    //     freeData();
+    // }
+    // INSERT THIS INSIDE YOUR PARSER
     return parserToken;
 }
 
@@ -961,7 +967,6 @@ void runLexer(char* testfile, int size)
         printf("\n");
         tk = getNextToken();
     } 
-    fclose(fp);
     freeData();
     free(tk);
 }
@@ -975,6 +980,8 @@ void freeData()
     first_load = 1;
     spill = 0;
     switched = 0;
+    if(fclose(fp) == 0) fp = NULL;
+    else printf("File not closed successfully\n");
 }
 
 #endif
