@@ -835,9 +835,6 @@ NODE doFollows(int searchNT)
                     firstN = firstN->next;
                 } 
                 if(firstN == NULL) break;
-                // printf(" ");
-                // printNT(searchNT);
-                // printNT(firstN->val.nt_val);
                 found = 0;
                 if(firstN->tnt == 1 && firstN->val.nt_val == searchNT) found = 1;
                 if(found == 1 && firstN->next == NULL)

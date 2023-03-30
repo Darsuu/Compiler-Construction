@@ -635,17 +635,17 @@ tokenInfo* getNextToken(){
                         break;
                     }
                     t->line_num = line;
+                    retract(1, &index);
                     for(int i = strlen(lexeme)-1; i>=0; i--)
                     {
                         if(isspace(lexeme[i])) lexeme[i] = '\0';
-                        else break;
                     }
                     if(getToken(lexeme, ht) == ID) t->token = ID;
                     else
                     {
                         t->token = getToken(lexeme, ht);
                     } 
-                    retract(1, &index);
+                    
                     strcpy(t->tv.lexeme, lexeme);
                     state = 1;
                     charCount = 1;
